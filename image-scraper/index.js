@@ -1,3 +1,15 @@
+const express = require('express');
+const axios = require('axios');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.json());
+
+app.get('/', (req, res) => {
+  res.send('✅ Image Scraper API is Running');
+});
+
 app.post('/scrape-images', async (req, res) => {
   const { topic, url } = req.body;
 
@@ -13,7 +25,6 @@ app.post('/scrape-images', async (req, res) => {
   }
 
   try {
-    // First request to get token (vqd)
     const initialRes = await axios.get(targetUrl, {
       headers: { 'User-Agent': 'Mozilla/5.0' }
     });
@@ -22,10 +33,9 @@ app.post('/scrape-images', async (req, res) => {
     const vqd = vqdMatch ? vqdMatch[1] : null;
 
     if (!vqd) {
-      return res.status(500).json({ error: 'Failed to extract search token (vqd)' });
+      return res.status(500).json({ error: 'Failed to extract DuckDuckGo token (vqd)' });
     }
 
-    // Actual image API request
     const apiUrl = `https://duckduckgo.com/i.js?l=us-en&o=json&q=${encodeURIComponent(topic)}&vqd=${vqd}`;
 
     const { data } = await axios.get(apiUrl, {
@@ -47,4 +57,8 @@ app.post('/scrape-images', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Scraping failed', details: err.message });
   }
+});
+
+app.listen(PORT, () => {
+  console.log(`✅ Server is running on port ${PORT}`);
 });
