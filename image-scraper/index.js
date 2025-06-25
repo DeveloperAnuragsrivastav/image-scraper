@@ -25,23 +25,30 @@ app.post('/scrape-images', async (req, res) => {
   }
 
   try {
-    const initialRes = await axios.get(targetUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    });
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      'Accept-Language': 'en-US,en;q=0.9',
+    };
 
-    const vqdMatch = initialRes.data.match(/vqd='(.+?)'/);
+    const initialRes = await axios.get(targetUrl, { headers });
+    const html = initialRes.data;
+
+    const vqdMatch = html.match(/vqd='(.+?)'/) || html.match(/vqd=\\?"(.+?)\\?"/);
     const vqd = vqdMatch ? vqdMatch[1] : null;
 
     if (!vqd) {
-      return res.status(500).json({ error: 'Failed to extract DuckDuckGo token (vqd)' });
+      return res.status(500).json({
+        error: 'Failed to extract DuckDuckGo token (vqd)',
+        hint: 'DuckDuckGo may have changed its structure. Try again later or use Bing API.'
+      });
     }
 
-    const apiUrl = `https://duckduckgo.com/i.js?l=us-en&o=json&q=${encodeURIComponent(topic)}&vqd=${vqd}`;
+    const imageApiUrl = `https://duckduckgo.com/i.js?l=us-en&o=json&q=${encodeURIComponent(topic)}&vqd=${vqd}`;
 
-    const { data } = await axios.get(apiUrl, {
+    const { data } = await axios.get(imageApiUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0',
-        'Referer': targetUrl
+        ...headers,
+        'Referer': targetUrl,
       }
     });
 
@@ -49,13 +56,16 @@ app.post('/scrape-images', async (req, res) => {
 
     res.json({
       topic,
-      source: "duckduckgo",
       total: images.length,
-      images
+      images,
     });
 
   } catch (err) {
-    res.status(500).json({ error: 'Scraping failed', details: err.message });
+    res.status(500).json({
+      error: 'Scraping failed',
+      message: err.message,
+      suggestion: 'Try switching to Bing, SerpAPI, or use static image sources if frequent failures occur.'
+    });
   }
 });
 
