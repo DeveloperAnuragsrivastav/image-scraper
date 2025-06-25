@@ -2,11 +2,14 @@ const express = require('express');
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+
+app.get('/', (req, res) => {
+  res.send('✅ Image Scraper API is Running');
+});
 
 app.post('/scrape-images', async (req, res) => {
   const { url } = req.body;
@@ -21,29 +24,25 @@ app.post('/scrape-images', async (req, res) => {
     });
 
     const $ = cheerio.load(data);
-    const imageURLs = [];
+    const images = [];
 
-    $('img').each((i, img) => {
-      const src = $(img).attr('src') || $(img).attr('data-src');
+    $('img').each((i, el) => {
+      const src = $(el).attr('src') || $(el).attr('data-src');
       if (src && src.startsWith('http')) {
-        imageURLs.push(src);
+        images.push(src);
       }
     });
 
     res.json({
-      total: imageURLs.length,
-      images: imageURLs
+      total: images.length,
+      images
     });
 
   } catch (err) {
-    res.status(500).json({ error: 'Failed to scrape images', details: err.message });
+    res.status(500).json({ error: 'Scraping failed', details: err.message });
   }
 });
 
-app.get('/', (req, res) => {
-  res.send('✅ Image Scraper API is Running');
-});
-
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`✅ Server is running on port ${PORT}`);
 });
