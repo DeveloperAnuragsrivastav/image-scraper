@@ -52,7 +52,7 @@ app.post('/scrape-images', async (req, res) => {
       }
     });
 
-    const images = data.results.map(img => img.image);
+    const images = data.results.map(img => img.image).slice(0, 1); // ✅ Only 1 image returned
 
     res.json({
       topic,
